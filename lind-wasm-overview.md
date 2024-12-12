@@ -61,6 +61,3 @@ Provides normal POSIX system calls including:
 
 ### 3i Implementation
 The iPC (intra-process call) interposable interface enables secure and efficient cage communication with function call-like speed. It provides POSIX interfaces between cages with interposition capabilities, enabling fine-grained security and access control while maintaining program behavior[1].
-
-Citations:
-[1] https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_dc3a1a06-2553-43d0-9c95-3935507379cf/15c65d34-eb7f-4fe5-ba0f-46e6576e5503/Lind-Wasm-Overview.pdf
