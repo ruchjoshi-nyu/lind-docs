@@ -6,7 +6,8 @@ author:
 description: "Documentaiton for the Lind Project"
 
 # Build settings
-remote_theme: jekyll/minima
+#remote_theme: jekyll/minima
+remote_theme: just-the-docs/just-the-docs
 
 # GitHub Pages settings
 lsi: false
