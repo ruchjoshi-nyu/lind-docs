@@ -1,88 +1,103 @@
 # Multi-Process Support in Lind-Wasm
 
-## Process Management
+The way multi-process (specifically clone_syscall, exit_syscall and longjmp) works in lind-wasm heavily depends on Asyncify from Binaryen. So let’s first introduce how Asyncify works on WebAssembly.
+So Asyncify is a second-time compilation that adds some logic to the existing compiled file.
+The Asyncify works by having a few global variables that define the current execution status. One global variable is to describe the current status of stack unwind/rewind. If current_state is set to unwind, that means the current process is undergoing stack unwind, and if current_state is set to rewind, that means the current process is undergoing stack rewind, and if current_state is set to normal, that means the current process is working normally, just like no Asyncify has applied to it.
 
-### Process Class
-The Process class follows a threading-like API for managing processes:
+For example, suppose there is a program looks like this:
 
-```python
-from multiprocess import Process, Queue
+```
+int funcA()
+{
+	int a;
+	int b;
 
-def worker(q):
-    q.put('hello world')
+	for... {
+		...do some work...
+	}
 
-if __name__ == '__main__':
-    q = Queue()
-    p = Process(target=worker, args=[q])
-    p.start()
-    print(q.get())
-    p.join()
+	funcB();
+
+	...do some work...
+}
+
+int funcB()
+{
+	...do some work
+      imported_wasm_functionC();
+}
+
 ```
 
-### Process Pool
-Worker processes can be managed through a Pool class for parallel task execution:
+After applying Asyncify, it may become something like this:
 
-```python
-from multiprocess import Pool
+```
+int funcA()
+{
+	if(current_state == rewind) {
+		restore_functionA_context();
+	}
+	if(current_state == normal) {
+		int a;
+		int b;
 
-def square(x): 
-    return x*x
+		for... {
+			...do some work...
+		}
+	}
+	if(last_unwind_return_is_here)
+	{
+		funcB();
+		if(current_state == unwind) {
+			save_functionA_context();
+			return;
+		}
+	}
 
-pool = Pool(4)  # Creates 4 worker processes
-result = pool.map_async(square, range(10))
+	if(current_state == normal) {
+		...do some work...
+	}
+}
+
+int funcB()
+{
+	if(current_state == rewind) {
+		restore_functionB_context();
+	}
+	if(current_state == normal) {
+		if(current_state == normal) {
+			...do some work
+		}
+	}
+
+	if(last_unwind_return_is_here) {
+		imported_wasm_functionC();
+		if(current_state == unwind) {
+			save_functionB_context();
+			return;
+		}
+	}
+}
+
 ```
 
-## Synchronization
+So Asyncify basically adds an if statement for all the normal user code and only executes the user code if current_state is normal. After a function has been executed, it will check if current_state is set to unwind. If that is the case, the function context will be saved and the function will return immediately. When rewind happens later, the function context will be restored at the beginning of the function.
 
-### Primitives
-- Locks
-- Semaphores  
-- Conditions
-- Events
-- Barriers
+Besides these, Asyncify also has four functions that control the global current_state.
+Asyncify_unwind_start: Once called, set current_state to unwind and return
+Asyncify_unwind_stop: Once called, set current_state to normal and return
+Asyncify_rewind_start: Once called, set current_state to rewind and return
+Asyncify_rewind_stop: Once called, set current_state to normal and return
+Asyncify_unwind_start and Asyncify_rewind_start also takes an additional argument that specifies where to store/retrieve the unwind_data (i.e. function context).
 
-Example usage:
-```python
-from multiprocess import Condition
+Such transformation from Asyncify allows you to freely navigate the callstack of a process, but with the cost of largely increased binary size, and slightly decreased performance (from a bunch of extra if statements added by Asyncify).
 
-condition = Condition()
-condition.acquire()
-# Critical section code
-condition.release()
-```
+The fork syscall is built up on Asyncify. When fork is called, the whole wasm process would undergo unwind and rewind. But the unwind_data (function context) is copied once unwind is done. The unwind_data could basically be viewed as a snapshot of the callstack (with the unwind_data, we can restore the wasm process to the state when unwind_data is captured). With such a powerful mechanism, the implementation of the fork is pretty straightforward: once we capture the snapshot of the parent process callstack, we can let the child do the rewind with the unwind_data from parent, and the child will be able to return to the exact state when parent calls fork. Threading creation is very similar to this, except that the memory is shared between parent and child.
 
-## Inter-Process Communication
+Exit syscall is currently also built on Asyncify, by performing the unwind on the process, then instead of doing rewinding, the process can just return.
 
-### Shared Objects
-Objects can be shared between processes using:
-- Pipes for direct process-to-process communication
-- Multi-producer/multi-consumer queues
-- Shared memory for simple data
-- Manager process for complex objects
+Exec syscall is built upon Exit syscall: instead of returning directly after unwind is finished, a new wasm instance is created with the supplied binary path.
 
-### Manager Interface
-```python
-from multiprocess import Manager
+Setjmp and longjmp implementation is also very similar to fork: When setjmp is called, the process will undergo unwind and rewind, leaving an unwind_data (callstack snapshot). The unwind_data is saved somewhere. When later the process calls longjmp and specifies a restore to the previous state, the process first will unwind, after unwind is finished, its unwind_data will be replaced by the old unwind_data generated when setjmp is called. Then after rewind, the process can restore to its previous state.
 
-manager = Manager()
-shared_list = manager.list(range(10))
-shared_list.reverse()
-```
-
-## Process Isolation
-
-Each process maintains:
-- Independent memory space
-- Separate file descriptors
-- Distinct thread pools
-- Isolated system resources
-
-## Error Handling
-
-Processes should implement:
-- Exception handling
-- Resource cleanup
-- Graceful termination
-- Status reporting
-
-The multi-process system ensures proper isolation while maintaining POSIX-compliant behavior across all processes.
+Last we have our wait_syscall, which is implemented purely in rawposix and does not use Asyncify at all. Wait_syscall works by maintaining a zombie relationship in the cage struct: when a cage exits, it will insert itself into the parent’s zombie list. Therefore, the parent can simply check its zombie list when doing the wait syscall, and retrieve the first zombie in the list (first in first out).
