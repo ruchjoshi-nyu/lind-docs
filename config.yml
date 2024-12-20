@@ -3,11 +3,18 @@ title: Lind Docs
 author:
   name: Ruchir Joshi
   email: ruchirjoshi@nyu.edu
-description: "Documentaiton for the Lind Project"
+description: "Documentation for the Lind Project"
 
-# Build settings
-#remote_theme: jekyll/minima
-remote_theme: just-the-docs/just-the-docs
+# Site configuration
+site_name: Lind-Wasm Documentation
+site_description: Documentation for Lind-Wasm project
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - toc.integrate
 
 # GitHub Pages settings
 lsi: false
@@ -29,3 +36,37 @@ sidebar:
 exclude:
   - node_modules
   - vendor
+
+# Navigation structure
+nav:
+  - Overview: index.md
+  - Multi-process Support: multiprocess-support.md
+  - RawPOSIX: rawposix.md
+
+# Markdown extensions
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed
+  - def_list
+  - footnotes
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+# Repository
+repo_name: lind-wasm
+repo_url: https://github.com/lind-wasm
+edit_uri: edit/main/docs/
+
+# Additional settings
+plugins:
+  - search
+  - minify:
+      minify_html: true
