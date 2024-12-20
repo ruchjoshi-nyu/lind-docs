@@ -1,3 +1,7 @@
+---
+id: Multi-process Support
+---
+
 # Multi-Process Support in Lind-Wasm
 
 The way multi-process (specifically clone_syscall, exit_syscall and longjmp) works in lind-wasm heavily depends on Asyncify from Binaryen. So let’s first introduce how Asyncify works on WebAssembly.\
