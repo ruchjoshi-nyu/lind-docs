@@ -1,3 +1,7 @@
+---
+id: Overview
+---
+
 # Lind-Wasm
 
 Lind is a single-process sandbox that provides an option to safely execute programs. Lind executes applications using software fault isolation and a kernel microvisor to limit the potential of reaching bugs or security flaws in the application.
