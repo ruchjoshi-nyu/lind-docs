@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lind-Wasm Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        nav {
+            background-color: #f8f9fa;
+            padding: 1em;
+            margin-bottom: 2em;
+        }
+        nav a {
+            margin-right: 20px;
+            text-decoration: none;
+            color: #333;
+        }
+        .content {
+            padding: 20px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="#overview">Overview</a>
+        <a href="#multiprocess">Multi-process Support</a>
+        <a href="#rawposix">RawPOSIX</a>
+    </nav>
+
+    <div class="content" id="overview">
+        <h1>Lind-Wasm</h1>
+        <p>Lind is a single-process sandbox that provides an option to safely execute programs. Lind executes applications using software fault isolation and a kernel microvisor to limit the potential of reaching bugs or security flaws in the application.</p>
+        
+        <h2>Core Concepts</h2>
+        <h3>Cage</h3>
+        <ul>
+            <li>Lightweight isolation boundary within a process</li>
+            <li>Can run legacy code (may need recompilation)</li>
+            <li>Protects and isolates memory</li>
+        </ul>
+
+        <h3>Microvisor</h3>
+        <ul>
+            <li>Small POSIX compliant kernel within a process</li>
+            <li>Provides a POSIX interface</li>
+            <li>Distinct isolation between cages</li>
+        </ul>
+
+        <h2>Components</h2>
+        <h3>Wasmtime</h3>
+        <p>Wasmtime is a fast and secure runtime for WebAssembly designed by Bytecode Alliance. Lind-wasm uses wasmtime as a runtime with added support for multi-processing via Asyncify.</p>
+    </div>
+
+    <div class="content" id="multiprocess">
+        <h1>Multi-Process Support</h1>
+        <p>Multi-process support in Lind-Wasm heavily depends on Asyncify from Binaryen. Asyncify is a second-time compilation that adds logic to the existing compiled file.</p>
+        
+        <h2>Key Functions</h2>
+        <ul>
+            <li>Asyncify_unwind_start</li>
+            <li>Asyncify_unwind_stop</li>
+            <li>Asyncify_rewind_start</li>
+            <li>Asyncify_rewind_stop</li>
+        </ul>
+    </div>
+
+    <div class="content" id="rawposix">
+        <h1>RawPOSIX</h1>
+        <p>RawPOSIX is a critical component of the Lind Project, designed to provide a POSIX-compliant interface for applications running within a microvisor environment.</p>
+        
+        <h2>Key Components</h2>
+        <ul>
+            <li>System Call API</li>
+            <li>Cage Structure</li>
+            <li>Testing and Validation</li>
+        </ul>
+
+        <h2>Supported Features</h2>
+        <ul>
+            <li>Memory Management</li>
+            <li>Process Management</li>
+            <li>File System Operations</li>
+            <li>Networking</li>
+        </ul>
+    </div>
+</body>
+</html>
