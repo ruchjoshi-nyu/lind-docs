@@ -84,11 +84,11 @@ int funcB()
 So Asyncify basically adds an if statement for all the normal user code and only executes the user code if current_state is normal. After a function has been executed, it will check if current_state is set to unwind. If that is the case, the function context will be saved and the function will return immediately. When rewind happens later, the function context will be restored at the beginning of the function.\
 \
 Besides these, Asyncify also has four functions that control the global current_state.\
-###Asyncify_unwind_start###: Once called, set current_state to unwind and return\
-###Asyncify_unwind_stop###: Once called, set current_state to normal and return\
-###Asyncify_rewind_start###: Once called, set current_state to rewind and return\
-###Asyncify_rewind_stop###: Once called, set current_state to normal and return\
-###Asyncify_unwind_start### and ###Asyncify_rewind_start### also takes an additional argument that specifies where to store/retrieve the unwind_data (i.e. function context).\\
+**Asyncify_unwind_start**: Once called, set current_state to unwind and return\
+**Asyncify_unwind_stop**: Once called, set current_state to normal and return\
+**Asyncify_rewind_start**: Once called, set current_state to rewind and return\
+**Asyncify_rewind_stop**: Once called, set current_state to normal and return\
+**Asyncify_unwind_start** and **Asyncify_rewind_start** also takes an additional argument that specifies where to store/retrieve the unwind_data (i.e. function context).\\
 
 Such transformation from Asyncify allows you to freely navigate the callstack of a process, but with the cost of largely increased binary size, and slightly decreased performance (from a bunch of extra if statements added by Asyncify).\\
 
@@ -98,6 +98,6 @@ Exit syscall is currently also built on Asyncify, by performing the unwind on th
 
 Exec syscall is built upon Exit syscall: instead of returning directly after unwind is finished, a new wasm instance is created with the supplied binary path.\\
 
-###Setjmp### and ###longjmp### implementation is also very similar to fork: When setjmp is called, the process will undergo unwind and rewind, leaving an unwind_data (callstack snapshot). The unwind_data is saved somewhere. When later the process calls longjmp and specifies a restore to the previous state, the process first will unwind, after unwind is finished, its unwind_data will be replaced by the old unwind_data generated when setjmp is called. Then after rewind, the process can restore to its previous state.\\
+**Setjmp** and **longjmp** implementation is also very similar to fork: When setjmp is called, the process will undergo unwind and rewind, leaving an unwind_data (callstack snapshot). The unwind_data is saved somewhere. When later the process calls longjmp and specifies a restore to the previous state, the process first will unwind, after unwind is finished, its unwind_data will be replaced by the old unwind_data generated when setjmp is called. Then after rewind, the process can restore to its previous state.\\
 
-Last we have our ###wait_syscall###, which is implemented purely in rawposix and does not use Asyncify at all. Wait_syscall works by maintaining a zombie relationship in the cage struct: when a cage exits, it will insert itself into the parent’s zombie list. Therefore, the parent can simply check its zombie list when doing the wait syscall, and retrieve the first zombie in the list (first in first out).\\
+Last we have our **wait_syscall** which is implemented purely in rawposix and does not use Asyncify at all. Wait_syscall works by maintaining a zombie relationship in the cage struct: when a cage exits, it will insert itself into the parent’s zombie list. Therefore, the parent can simply check its zombie list when doing the wait syscall, and retrieve the first zombie in the list (first in first out).\\
